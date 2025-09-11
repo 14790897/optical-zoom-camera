@@ -5,147 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>相机步进电机控制</title>
     <style>
-        body {
-            font-family: 'Microsoft YaHei', Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 30px;
-            backdrop-filter: blur(10px);
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 2.5em;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        .motor-section {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .control-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin: 15px 0;
-            justify-content: center;
-        }
-        button {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
-        }
-        button:active {
-            transform: translateY(0);
-        }
-        .stop-btn {
-            background: linear-gradient(45deg, #f44336, #da190b);
-        }
-        .both-btn {
-            background: linear-gradient(45deg, #2196F3, #1976D2);
-        }
-        .status {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            font-family: monospace;
-            font-size: 14px;
-        }
-        .input-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 10px 0;
-            flex-wrap: wrap;
-        }
-        input, select {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
-        }
-        label {
-            font-weight: bold;
-            min-width: 80px;
-        }
-        @media (max-width: 600px) {
-            .control-group {
-                flex-direction: column;
-            }
-            button {
-                width: 100%;
-            }
-        }
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; min-height: 100vh; }
+        .container { max-width: 800px; margin: 0 auto; background: rgba(255,255,255,0.1); border-radius: 15px; padding: 30px; backdrop-filter: blur(10px); }
+        h1 { text-align: center; margin-bottom: 30px; font-size: 2.2em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .motor-section { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 20px; margin: 20px 0; border: 1px solid rgba(255,255,255,0.2); }
+        .control-group { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; justify-content: center; }
+        button { background: linear-gradient(45deg, #4CAF50, #45a049); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        button:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.3); }
+        button:active { transform: translateY(0); }
+        .stop-btn { background: linear-gradient(45deg, #f44336, #da190b); }
+        .both-btn { background: linear-gradient(45deg, #2196F3, #1976D2); }
+        .status { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin: 20px 0; font-family: monospace; font-size: 14px; }
+        .input-group { display: flex; align-items: center; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+        input, select { padding: 8px 12px; border: none; border-radius: 5px; background: rgba(255,255,255,0.9); color: #333; }
+        label { font-weight: bold; min-width: 80px; }
+        @media (max-width: 600px) { .control-group { flex-direction: column; } button { width: 100%; } }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎥 相机步进电机控制系统</h1>
-        
-        <div class="status" id="status">
-            系统状态: 等待连接...
-        </div>
+        <h1>相机步进电机控制系统</h1>
+
+        <div class="status" id="status">系统状态：等待连接...</div>
 
         <div class="motor-section">
-            <h2>⚙️ 电机1控制 (GPIO2/3)</h2>
+            <h2>电机1控制 (GPIO2/3)</h2>
             <div class="control-group">
-                <button onclick="controlMotor(1, 'cw')">↻ 顺时针</button>
-                <button onclick="controlMotor(1, 'ccw')">↺ 逆时针</button>
-                <button class="stop-btn" onclick="stopMotor(1)">⏹ 停止</button>
+                <button onclick="controlMotor(1, 'cw')">电机1 顺时针</button>
+                <button onclick="controlMotor(1, 'ccw')">电机1 逆时针</button>
+                <button class="stop-btn" onclick="stopMotor(1)">电机1 停止</button>
             </div>
         </div>
 
         <div class="motor-section">
-            <h2>⚙️ 电机2控制 (GPIO10/6)</h2>
+            <h2>电机2控制 (GPIO10/6)</h2>
             <div class="control-group">
-                <button onclick="controlMotor(2, 'cw')">↻ 顺时针</button>
-                <button onclick="controlMotor(2, 'ccw')">↺ 逆时针</button>
-                <button class="stop-btn" onclick="stopMotor(2)">⏹ 停止</button>
+                <button onclick="controlMotor(2, 'cw')">电机2 顺时针</button>
+                <button onclick="controlMotor(2, 'ccw')">电机2 逆时针</button>
+                <button class="stop-btn" onclick="stopMotor(2)">电机2 停止</button>
             </div>
         </div>
 
         <div class="motor-section">
-            <h2>🔄 双电机同步控制</h2>
+            <h2>双电机同步控制</h2>
             <div class="control-group">
-                <button class="both-btn" onclick="controlBothMotors('cw', 'cw')">⇈ 同向顺时针</button>
-                <button class="both-btn" onclick="controlBothMotors('ccw', 'ccw')">⇊ 同向逆时针</button>
-                <button class="both-btn" onclick="controlBothMotors('cw', 'ccw')">⇔ 差动转动</button>
-                <button class="stop-btn" onclick="stopAllMotors()">⏹ 全部停止</button>
+                <button class="both-btn" onclick="controlBothMotors('cw', 'cw')">同向 顺时针</button>
+                <button class="both-btn" onclick="controlBothMotors('ccw', 'ccw')">同向 逆时针</button>
+                <button class="both-btn" onclick="controlBothMotors('cw', 'ccw')">差动转动</button>
+                <button class="stop-btn" onclick="stopAllMotors()">全部停止</button>
             </div>
         </div>
 
         <div class="motor-section">
-            <h2>⚙️ 参数设置</h2>
+            <h2>参数设置</h2>
             <div class="input-group">
-                <label>转动时间:</label>
+                <label>转动时间(秒):</label>
                 <input type="number" id="duration" value="20" min="1" max="60">
-                <span>秒</span>
             </div>
             <div class="input-group">
-                <label>速度:</label>
+                <label>速度(微秒/半步):</label>
                 <select id="speed">
                     <option value="500">很快</option>
                     <option value="1000" selected>正常</option>
@@ -154,21 +72,21 @@
                 </select>
             </div>
             <div class="control-group">
-                <button onclick="setParameters()">📝 应用设置</button>
+                <button onclick="setParameters()">应用设置</button>
             </div>
         </div>
 
         <div class="motor-section">
-            <h2>🔄 系统管理</h2>
+            <h2>系统管理</h2>
             <div class="control-group">
-                <button onclick="rebootSystem()">🔄 重启系统</button>
-                <button onclick="showOTAInfo()">📡 OTA更新信息</button>
+                <button onclick="rebootSystem()">重启系统</button>
+                <button onclick="showOTAInfo()">显示/隐藏 OTA 信息</button>
             </div>
             <div id="otaInfo" style="display:none; margin-top:15px; padding:10px; background:rgba(0,0,0,0.3); border-radius:5px;">
-                <p><strong>OTA无线更新说明：</strong></p>
+                <p><strong>OTA 无线更新说明</strong></p>
                 <p>1. 确保设备在线</p>
-                <p>2. 在PlatformIO中取消注释OTA配置</p>
-                <p>3. 使用命令：<code>pio run -t upload</code></p>
+                <p>2. 在 PlatformIO 中取消注释 OTA 配置</p>
+                <p>3. 运行 pio run -t upload</p>
                 <p>4. 主机名：<span id="hostname">camera-lens.local</span></p>
                 <p>5. 密码：admin123</p>
             </div>
@@ -176,7 +94,6 @@
     </div>
 
     <script>
-        // 发送HTTP请求到ESP32
         async function sendRequest(url) {
             try {
                 const response = await fetch(url);
@@ -188,74 +105,57 @@
             }
         }
 
-        // 更新状态显示
         function updateStatus(message) {
             const statusElement = document.getElementById('status');
             const now = new Date().toLocaleTimeString();
             statusElement.textContent = `[${now}] ${message}`;
         }
 
-        // 控制单个电机
         function controlMotor(motorNum, direction) {
             const duration = document.getElementById('duration').value;
             sendRequest(`/motor${motorNum}/${direction}/${duration}`);
         }
 
-        // 停止单个电机
         function stopMotor(motorNum) {
             sendRequest(`/motor${motorNum}/stop`);
         }
 
-        // 控制双电机
         function controlBothMotors(dir1, dir2) {
             const duration = document.getElementById('duration').value;
             sendRequest(`/both/${dir1}/${dir2}/${duration}`);
         }
 
-        // 停止所有电机
         function stopAllMotors() {
             sendRequest('/stop/all');
         }
 
-        // 设置参数
         function setParameters() {
             const speed = document.getElementById('speed').value;
             sendRequest(`/set/speed/${speed}`);
         }
 
-        // 重启系统
         function rebootSystem() {
-            if (confirm('确定要重启系统吗？')) {
+            if (confirm('确定要重启系统吗?')) {
                 sendRequest('/reboot');
             }
         }
 
-        // 显示OTA信息
         function showOTAInfo() {
             const otaInfo = document.getElementById('otaInfo');
-            if (otaInfo.style.display === 'none') {
-                otaInfo.style.display = 'block';
-            } else {
-                otaInfo.style.display = 'none';
-            }
+            otaInfo.style.display = (otaInfo.style.display === 'none' || otaInfo.style.display === '') ? 'block' : 'none';
         }
 
-        // 页面加载完成后的初始化
         window.onload = function() {
             updateStatus('网页控制界面已加载');
-            // 每5秒获取一次状态
             setInterval(getStatus, 5000);
         };
 
-        // 获取设备状态
         async function getStatus() {
             try {
                 const response = await fetch('/status');
                 const data = await response.json();
-                updateStatus(`电机状态: ${data.motor1 || '停止'} | ${data.motor2 || '停止'}`);
-            } catch (error) {
-                // 忽略状态获取错误
-            }
+                updateStatus(`电机状态 ${data.motor1 || '停止'} | ${data.motor2 || '停止'}`);
+            } catch (error) { /* ignore */ }
         }
     </script>
 </body>
