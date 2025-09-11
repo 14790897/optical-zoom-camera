@@ -237,20 +237,34 @@ void initWebServer() {
   // 提供静态文件
   // server.serveStatic("/", LittleFS, "/");
    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-            { request->send(LittleFS, "/index.html", "text/html"); });
+            { request->send(LittleFS, "/index.html", "text/html; charset=utf-8"); });
   // 电机1控制
   server.on("/motor1/cw/*", HTTP_GET, [](AsyncWebServerRequest *request){
     String duration = request->pathArg(0);
-    Serial.printf("[HTTP] /motor1/cw/%s\n", duration.c_str());
-    startMotor(1, true, duration.toInt());
-    request->send(200, "text/plain", "电机1顺时针转动" + duration + "秒");
+    int durationInt = duration.toInt();
+    // 如果没有提供有效的持续时间，使用默认值5秒
+    if (durationInt <= 0)
+    {
+      durationInt = 5;
+      duration = "5";
+    }
+    Serial.printf("[HTTP] /motor1/cw/%s (实际: %d秒)\n", duration.c_str(), durationInt);
+    startMotor(1, true, durationInt);
+    request->send(200, "text/plain", "电机1顺时针转动" + String(durationInt) + "秒");
   });
   
   server.on("/motor1/ccw/*", HTTP_GET, [](AsyncWebServerRequest *request){
     String duration = request->pathArg(0);
-    Serial.printf("[HTTP] /motor1/ccw/%s\n", duration.c_str());
-    startMotor(1, false, duration.toInt());
-    request->send(200, "text/plain", "电机1逆时针转动" + duration + "秒");
+    int durationInt = duration.toInt();
+    // 如果没有提供有效的持续时间，使用默认值5秒
+    if (durationInt <= 0)
+    {
+      durationInt = 5;
+      duration = "5";
+    }
+    Serial.printf("[HTTP] /motor1/ccw/%s (实际: %d秒)\n", duration.c_str(), durationInt);
+    startMotor(1, false, durationInt);
+    request->send(200, "text/plain", "电机1逆时针转动" + String(durationInt) + "秒");
   });
   
   server.on("/motor1/stop", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -262,16 +276,30 @@ void initWebServer() {
   // 电机2控制
   server.on("/motor2/cw/*", HTTP_GET, [](AsyncWebServerRequest *request){
     String duration = request->pathArg(0);
-    Serial.printf("[HTTP] /motor2/cw/%s\n", duration.c_str());
-    startMotor(2, true, duration.toInt());
-    request->send(200, "text/plain", "电机2顺时针转动" + duration + "秒");
+    int durationInt = duration.toInt();
+    // 如果没有提供有效的持续时间，使用默认值5秒
+    if (durationInt <= 0)
+    {
+      durationInt = 5;
+      duration = "5";
+    }
+    Serial.printf("[HTTP] /motor2/cw/%s (实际: %d秒)\n", duration.c_str(), durationInt);
+    startMotor(2, true, durationInt);
+    request->send(200, "text/plain", "电机2顺时针转动" + String(durationInt) + "秒");
   });
   
   server.on("/motor2/ccw/*", HTTP_GET, [](AsyncWebServerRequest *request){
     String duration = request->pathArg(0);
-    Serial.printf("[HTTP] /motor2/ccw/%s\n", duration.c_str());
-    startMotor(2, false, duration.toInt());
-    request->send(200, "text/plain", "电机2逆时针转动" + duration + "秒");
+    int durationInt = duration.toInt();
+    // 如果没有提供有效的持续时间，使用默认值5秒
+    if (durationInt <= 0)
+    {
+      durationInt = 5;
+      duration = "5";
+    }
+    Serial.printf("[HTTP] /motor2/ccw/%s (实际: %d秒)\n", duration.c_str(), durationInt);
+    startMotor(2, false, durationInt);
+    request->send(200, "text/plain", "电机2逆时针转动" + String(durationInt) + "秒");
   });
   
   server.on("/motor2/stop", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -285,16 +313,22 @@ void initWebServer() {
     String dir1 = request->pathArg(0);
     String dir2 = request->pathArg(1);
     String duration = request->pathArg(2);
-    Serial.printf("[HTTP] /both/%s/%s/%s\n", dir1.c_str(), dir2.c_str(), duration.c_str());
-    
+    int durationInt = duration.toInt();
+    // 如果没有提供有效的持续时间，使用默认值5秒
+    if (durationInt <= 0)
+    {
+      durationInt = 5;
+      duration = "5";
+    }
+    Serial.printf("[HTTP] /both/%s/%s/%s (实际: %d秒)\n", dir1.c_str(), dir2.c_str(), duration.c_str(), durationInt);
+
     bool motor1_cw = (dir1 == "cw");
     bool motor2_cw = (dir2 == "cw");
-    int dur = duration.toInt();
-    
-    startMotor(1, motor1_cw, dur);
-    startMotor(2, motor2_cw, dur);
-    
-    request->send(200, "text/plain", "双电机已启动");
+
+    startMotor(1, motor1_cw, durationInt);
+    startMotor(2, motor2_cw, durationInt);
+
+    request->send(200, "text/plain", "双电机已启动运行" + String(durationInt) + "秒");
   });
   
   // 停止所有电机
