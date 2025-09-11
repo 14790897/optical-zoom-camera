@@ -1,4 +1,4 @@
-#include <Arduino.h>
+﻿#include <Arduino.h>
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -234,10 +234,13 @@ void initLittleFS() {
 
 // 初始化Web服务器
 void initWebServer() {
+  // 允许跨域，便于开发环境通过 mDNS 或不同源访问
+  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
+  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type");
   // 提供静态文件
   // server.serveStatic("/", LittleFS, "/");
-   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-            { request->send(LittleFS, "/index.html", "text/html; charset=utf-8"); });
+
   // 电机1控制
   server.on("/motor1/cw/*", HTTP_GET, [](AsyncWebServerRequest *request){
     String duration = request->pathArg(0);
@@ -362,7 +365,66 @@ void initWebServer() {
     delay(3000);
     ESP.restart();
   });
-  
+   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send(LittleFS, "/index.html", "text/html; charset=utf-8"); });
+
+  // 兼容查询参数的简易接口，避免某些环境下 pathArg(*) 匹配异常
+  server.on("/motor1/cw", HTTP_GET, [](AsyncWebServerRequest *request){
+    int durationInt = 5;
+    if (request->hasParam("t")) {
+      durationInt = request->getParam("t")->value().toInt();
+      if (durationInt <= 0) durationInt = 5;
+    }
+    Serial.printf("[HTTP] /motor1/cw?t=%d\n", durationInt);
+    startMotor(1, true, durationInt);
+    request->send(200, "text/plain; charset=utf-8", "电机1顺时针转动" + String(durationInt) + "秒");
+  });
+
+  server.on("/motor1/ccw", HTTP_GET, [](AsyncWebServerRequest *request){
+    int durationInt = 5;
+    if (request->hasParam("t")) {
+      durationInt = request->getParam("t")->value().toInt();
+      if (durationInt <= 0) durationInt = 5;
+    }
+    Serial.printf("[HTTP] /motor1/ccw?t=%d\n", durationInt);
+    startMotor(1, false, durationInt);
+    request->send(200, "text/plain; charset=utf-8", "电机1逆时针转动" + String(durationInt) + "秒");
+  });
+
+  server.on("/motor2/cw", HTTP_GET, [](AsyncWebServerRequest *request){
+    int durationInt = 5;
+    if (request->hasParam("t")) {
+      durationInt = request->getParam("t")->value().toInt();
+      if (durationInt <= 0) durationInt = 5;
+    }
+    Serial.printf("[HTTP] /motor2/cw?t=%d\n", durationInt);
+    startMotor(2, true, durationInt);
+    request->send(200, "text/plain; charset=utf-8", "电机2顺时针转动" + String(durationInt) + "秒");
+  });
+
+  server.on("/motor2/ccw", HTTP_GET, [](AsyncWebServerRequest *request){
+    int durationInt = 5;
+    if (request->hasParam("t")) {
+      durationInt = request->getParam("t")->value().toInt();
+      if (durationInt <= 0) durationInt = 5;
+    }
+    Serial.printf("[HTTP] /motor2/ccw?t=%d\n", durationInt);
+    startMotor(2, false, durationInt);
+    request->send(200, "text/plain; charset=utf-8", "电机2逆时针转动" + String(durationInt) + "秒");
+  });
+
+  server.on("/both", HTTP_GET, [](AsyncWebServerRequest *request){
+    String d1 = request->hasParam("d1") ? request->getParam("d1")->value() : String("cw");
+    String d2 = request->hasParam("d2") ? request->getParam("d2")->value() : String("cw");
+    int durationInt = request->hasParam("t") ? request->getParam("t")->value().toInt() : 5;
+    if (durationInt <= 0) durationInt = 5;
+    bool motor1_cw = (d1 == "cw");
+    bool motor2_cw = (d2 == "cw");
+    Serial.printf("[HTTP] /both?d1=%s&d2=%s&t=%d\n", d1.c_str(), d2.c_str(), durationInt);
+    startMotor(1, motor1_cw, durationInt);
+    startMotor(2, motor2_cw, durationInt);
+    request->send(200, "text/plain; charset=utf-8", "双电机已启动运行" + String(durationInt) + "秒");
+  });
   server.begin();
   Serial.println("Web服务器已启动");
 }
@@ -423,7 +485,7 @@ void loop() {
   // 短暂延迟，避免过度占用CPU
   static unsigned long lastBeat = 0;
   unsigned long now = millis();
-  if (now - lastBeat >= 500) { // 每500ms 打印一次状态心跳
+  if (now - lastBeat >= 5000) { // 每500ms 打印一次状态心跳
     logMotorState();
     lastBeat = now;
   }

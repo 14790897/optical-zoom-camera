@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -27,6 +27,20 @@
         <h1>相机步进电机控制系统</h1>
 
         <div class="status" id="status">系统状态：等待连接...</div>
+
+        <div class="motor-section">
+            <h2>请求地址设置</h2>
+            <div class="input-group">
+                <label>当前地址:</label>
+                <input type="text" id="apiBase" style="min-width:320px" placeholder="例如: /motor 或 http://camera-lens.local" />
+                <button onclick="saveApiBase()">保存</button>
+            </div>
+            <div class="control-group">
+                <button onclick="useProdBase()">使用生产地址 /motor</button>
+                <button onclick="useMdnsBase()">使用 mDNS 地址</button>
+                <small id="apiHint" style="margin-left:10px; opacity:0.9">生产通过反向代理映射 /motor 到设备根目录</small>
+            </div>
+        </div>
 
         <div class="motor-section">
             <h2>电机1控制 (GPIO2/3)</h2>
@@ -94,14 +108,33 @@
     </div>
 
     <script>
-        async function sendRequest(url) {
+        // API基地址管理
+        let apiBase = '';
+
+        function getApiBase() {
+            return apiBase || '';
+        }
+
+        function buildUrl(path) {
+            const base = getApiBase();
+            if (base.startsWith('http')) {
+                return base + path;
+            } else if (base) {
+                return base + path;
+            } else {
+                return path;
+            }
+        }
+
+        async function sendRequest(path) {
             try {
+                const url = buildUrl(path);
                 const response = await fetch(url);
                 const text = await response.text();
-                updateStatus('命令已发送: ' + url);
+                updateStatus('命令已发送: ' + url + ' - 响应: ' + text.substring(0, 50));
                 return text;
             } catch (error) {
-                updateStatus('错误: ' + error.message);
+                updateStatus('错误: ' + error.message + ' URL: ' + buildUrl(path));
             }
         }
 
@@ -111,9 +144,46 @@
             statusElement.textContent = `[${now}] ${message}`;
         }
 
+        function saveApiBase() {
+            const input = document.getElementById('apiBase');
+            apiBase = input.value.trim();
+            localStorage.setItem('apiBase', apiBase);
+            updateStatus('API地址已保存: ' + (apiBase || '默认(当前域名)'));
+            updateApiHint();
+        }
+
+        function useProdBase() {
+            apiBase = '/motor';
+            document.getElementById('apiBase').value = apiBase;
+            localStorage.setItem('apiBase', apiBase);
+            updateStatus('已切换到生产环境地址: ' + apiBase);
+            updateApiHint();
+        }
+
+        function useMdnsBase() {
+            apiBase = 'http://camera-lens.local';
+            document.getElementById('apiBase').value = apiBase;
+            localStorage.setItem('apiBase', apiBase);
+            updateStatus('已切换到mDNS地址: ' + apiBase);
+            updateApiHint();
+        }
+
+        function updateApiHint() {
+            const hint = document.getElementById('apiHint');
+            if (apiBase === '/motor') {
+                hint.textContent = '生产环境: 通过反向代理映射 /motor 到设备根目录';
+            } else if (apiBase.includes('camera-lens.local')) {
+                hint.textContent = '开发环境: 直接访问设备mDNS地址';
+            } else if (apiBase.startsWith('http')) {
+                hint.textContent = '自定义: 直接访问指定IP或域名';
+            } else {
+                hint.textContent = '默认: 使用当前页面的域名和端口';
+            }
+        }
+
         function controlMotor(motorNum, direction) {
             const duration = document.getElementById('duration').value;
-            sendRequest(`/motor${motorNum}/${direction}/${duration}`);
+            sendRequest(`/motor${motorNum}/${direction}?t=${duration}`);
         }
 
         function stopMotor(motorNum) {
@@ -122,7 +192,7 @@
 
         function controlBothMotors(dir1, dir2) {
             const duration = document.getElementById('duration').value;
-            sendRequest(`/both/${dir1}/${dir2}/${duration}`);
+            sendRequest(`/both?d1=${dir1}&d2=${dir2}&t=${duration}`);
         }
 
         function stopAllMotors() {
@@ -146,16 +216,26 @@
         }
 
         window.onload = function() {
-            updateStatus('网页控制界面已加载');
+            // 加载保存的API地址
+            const savedApiBase = localStorage.getItem('apiBase');
+            if (savedApiBase) {
+                apiBase = savedApiBase;
+                document.getElementById('apiBase').value = apiBase;
+            }
+            updateApiHint();
+            updateStatus('网页控制界面已加载 - API地址: ' + (apiBase || '默认'));
             setInterval(getStatus, 5000);
         };
 
         async function getStatus() {
             try {
-                const response = await fetch('/status');
+                const response = await fetch(buildUrl('/status'));
                 const data = await response.json();
-                updateStatus(`电机状态 ${data.motor1 || '停止'} | ${data.motor2 || '停止'}`);
-            } catch (error) { /* ignore */ }
+                updateStatus(`电机状态: M1=${data.motor1 || '停止'} | M2=${data.motor2 || '停止'}`);
+            } catch (error) { 
+                // 静默处理状态查询错误
+                console.log('状态查询失败:', error.message);
+            }
         }
     </script>
 </body>
