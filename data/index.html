@@ -3,106 +3,367 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>相机步进电机控制</title>
+    <title>📷 相机步进电机控制系统</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { font-family: 'Microsoft YaHei', Arial, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; min-height: 100vh; }
-        .container { max-width: 800px; margin: 0 auto; background: rgba(255,255,255,0.1); border-radius: 15px; padding: 30px; backdrop-filter: blur(10px); }
-        h1 { text-align: center; margin-bottom: 30px; font-size: 2.2em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
-        .motor-section { background: rgba(255,255,255,0.1); border-radius: 10px; padding: 20px; margin: 20px 0; border: 1px solid rgba(255,255,255,0.2); }
-        .control-group { display: flex; flex-wrap: wrap; gap: 10px; margin: 15px 0; justify-content: center; }
-        button { background: linear-gradient(45deg, #4CAF50, #45a049); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; transition: all 0.3s ease; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-        button:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.3); }
-        button:active { transform: translateY(0); }
-        .stop-btn { background: linear-gradient(45deg, #f44336, #da190b); }
-        .both-btn { background: linear-gradient(45deg, #2196F3, #1976D2); }
-        .status { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin: 20px 0; font-family: monospace; font-size: 14px; }
-        .input-group { display: flex; align-items: center; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
-        input, select { padding: 8px 12px; border: none; border-radius: 5px; background: rgba(255,255,255,0.9); color: #333; }
-        label { font-weight: bold; min-width: 80px; }
-        @media (max-width: 600px) { .control-group { flex-direction: column; } button { width: 100%; } }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Microsoft YaHei', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            min-height: 100vh; 
+        }
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 20px; 
+            padding: 30px; 
+            backdrop-filter: blur(15px); 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        h1 { 
+            text-align: center; 
+            margin-bottom: 30px; 
+            font-size: 2.5em; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3); 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        h1 i { font-size: 0.8em; color: #FFD700; }
+        .motor-section { 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 15px; 
+            padding: 25px; 
+            margin: 25px 0; 
+            border: 1px solid rgba(255,255,255,0.2); 
+            transition: all 0.3s ease;
+        }
+        .motor-section:hover { 
+            background: rgba(255,255,255,0.15); 
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .motor-section h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+        .motor-section h2 i { color: #4CAF50; }
+        .control-group { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 15px; 
+            margin: 20px 0; 
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+        button { 
+            background: linear-gradient(45deg, #4CAF50, #45a049); 
+            color: white; 
+            border: none; 
+            padding: 15px 20px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: 600;
+            transition: all 0.3s ease; 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        button:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        button:hover:before { left: 100%; }
+        button:hover { 
+            transform: translateY(-3px) scale(1.02); 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+        }
+        button:active { 
+            transform: translateY(-1px) scale(0.98); 
+        }
+        .stop-btn { 
+            background: linear-gradient(45deg, #f44336, #da190b); 
+        }
+        .both-btn { 
+            background: linear-gradient(45deg, #2196F3, #1976D2); 
+        }
+        .settings-btn {
+            background: linear-gradient(45deg, #FF9800, #F57C00);
+        }
+        .system-btn {
+            background: linear-gradient(45deg, #9C27B0, #7B1FA2);
+        }
+        .save-btn {
+            background: linear-gradient(45deg, #009688, #00695C);
+        }
+        .status { 
+            background: rgba(0,0,0,0.4); 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin: 25px 0; 
+            font-family: 'Courier New', monospace; 
+            font-size: 14px; 
+            border-left: 4px solid #4CAF50;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status i { color: #4CAF50; font-size: 1.2em; }
+        .input-group { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            margin: 15px 0; 
+            flex-wrap: wrap; 
+        }
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 200px;
+        }
+        input, select { 
+            padding: 12px 15px; 
+            border: none; 
+            border-radius: 8px; 
+            background: rgba(255,255,255,0.9); 
+            color: #333; 
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        input:focus, select:focus {
+            outline: none;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transform: translateY(-2px);
+        }
+        label { 
+            font-weight: 600; 
+            min-width: 100px; 
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        label i { opacity: 0.8; }
+        .api-hint {
+            margin-left: 10px; 
+            opacity: 0.8; 
+            font-size: 0.9em;
+            padding: 5px 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+        }
+        .ota-info {
+            margin-top: 15px; 
+            padding: 20px; 
+            background: rgba(0,0,0,0.3); 
+            border-radius: 10px;
+            border-left: 4px solid #FF9800;
+        }
+        .ota-info h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .ota-info p {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 10px;
+            z-index: 1000;
+        }
+        .loading i {
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @media (max-width: 768px) { 
+            .container { padding: 20px; margin: 10px; }
+            h1 { font-size: 2em; flex-direction: column; gap: 10px; }
+            .control-group { grid-template-columns: 1fr; }
+            .button-grid { grid-template-columns: 1fr; }
+            button { padding: 18px; font-size: 16px; }
+            .input-group { flex-direction: column; align-items: stretch; }
+            .input-wrapper { min-width: auto; }
+        }
+        /* 脉冲动画效果 */
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
     </style>
 </head>
 <body>
+    <div class="loading" id="loading">
+        <i class="fas fa-spinner"></i>正在处理请求...
+    </div>
+    
     <div class="container">
-        <h1>相机步进电机控制系统</h1>
+        <h1>
+            <i class="fas fa-camera"></i>
+            相机步进电机控制系统
+            <i class="fas fa-cog"></i>
+        </h1>
 
-        <div class="status" id="status">系统状态：等待连接...</div>
+        <div class="status" id="status">
+            <i class="fas fa-info-circle"></i>
+            <span>系统状态：等待连接...</span>
+        </div>
 
         <div class="motor-section">
-            <h2>请求地址设置</h2>
+            <h2><i class="fas fa-network-wired"></i>请求地址设置</h2>
             <div class="input-group">
-                <label>当前地址:</label>
-                <input type="text" id="apiBase" style="min-width:320px" placeholder="例如: /motor 或 http://camera-lens.local" />
-                <button onclick="saveApiBase()">保存</button>
+                <div class="input-wrapper">
+                    <label><i class="fas fa-link"></i>当前地址:</label>
+                    <input type="text" id="apiBase" style="min-width:300px" placeholder="例如: /motor 或 http://camera-lens.local" />
+                </div>
+                <button class="save-btn" onclick="saveApiBase()">
+                    <i class="fas fa-save"></i>保存
+                </button>
             </div>
             <div class="control-group">
-                <button onclick="useProdBase()">使用生产地址 /motor</button>
-                <button onclick="useMdnsBase()">使用 mDNS 地址</button>
-                <small id="apiHint" style="margin-left:10px; opacity:0.9">生产通过反向代理映射 /motor 到设备根目录</small>
+                <button class="settings-btn" onclick="useProdBase()">
+                    <i class="fas fa-server"></i>生产环境 /motor
+                </button>
+                <button class="settings-btn" onclick="useMdnsBase()">
+                    <i class="fas fa-wifi"></i>mDNS 开发环境
+                </button>
+            </div>
+            <small class="api-hint" id="apiHint">生产通过反向代理映射 /motor 到设备根目录</small>
+        </div>
+
+        <div class="motor-section">
+            <h2><i class="fas fa-cog"></i>电机1控制 (GPIO2/3)</h2>
+            <div class="button-grid">
+                <button onclick="controlMotor(1, 'cw')" class="pulse">
+                    <i class="fas fa-arrow-rotate-right"></i>顺时针
+                </button>
+                <button onclick="controlMotor(1, 'ccw')">
+                    <i class="fas fa-arrow-rotate-left"></i>逆时针
+                </button>
+                <button class="stop-btn" onclick="stopMotor(1)">
+                    <i class="fas fa-stop"></i>停止
+                </button>
             </div>
         </div>
 
         <div class="motor-section">
-            <h2>电机1控制 (GPIO2/3)</h2>
-            <div class="control-group">
-                <button onclick="controlMotor(1, 'cw')">电机1 顺时针</button>
-                <button onclick="controlMotor(1, 'ccw')">电机1 逆时针</button>
-                <button class="stop-btn" onclick="stopMotor(1)">电机1 停止</button>
+            <h2><i class="fas fa-cog"></i>电机2控制 (GPIO10/6)</h2>
+            <div class="button-grid">
+                <button onclick="controlMotor(2, 'cw')" class="pulse">
+                    <i class="fas fa-arrow-rotate-right"></i>顺时针
+                </button>
+                <button onclick="controlMotor(2, 'ccw')">
+                    <i class="fas fa-arrow-rotate-left"></i>逆时针
+                </button>
+                <button class="stop-btn" onclick="stopMotor(2)">
+                    <i class="fas fa-stop"></i>停止
+                </button>
             </div>
         </div>
 
         <div class="motor-section">
-            <h2>电机2控制 (GPIO10/6)</h2>
+            <h2><i class="fas fa-sync-alt"></i>双电机同步控制</h2>
             <div class="control-group">
-                <button onclick="controlMotor(2, 'cw')">电机2 顺时针</button>
-                <button onclick="controlMotor(2, 'ccw')">电机2 逆时针</button>
-                <button class="stop-btn" onclick="stopMotor(2)">电机2 停止</button>
+                <button class="both-btn" onclick="controlBothMotors('cw', 'cw')">
+                    <i class="fas fa-arrows-rotate"></i>同向顺时针
+                </button>
+                <button class="both-btn" onclick="controlBothMotors('ccw', 'ccw')">
+                    <i class="fas fa-arrows-rotate"></i>同向逆时针
+                </button>
+                <button class="both-btn" onclick="controlBothMotors('cw', 'ccw')">
+                    <i class="fas fa-exchange-alt"></i>差动转动
+                </button>
+                <button class="stop-btn" onclick="stopAllMotors()">
+                    <i class="fas fa-hand-paper"></i>全部停止
+                </button>
             </div>
         </div>
 
         <div class="motor-section">
-            <h2>双电机同步控制</h2>
-            <div class="control-group">
-                <button class="both-btn" onclick="controlBothMotors('cw', 'cw')">同向 顺时针</button>
-                <button class="both-btn" onclick="controlBothMotors('ccw', 'ccw')">同向 逆时针</button>
-                <button class="both-btn" onclick="controlBothMotors('cw', 'ccw')">差动转动</button>
-                <button class="stop-btn" onclick="stopAllMotors()">全部停止</button>
-            </div>
-        </div>
-
-        <div class="motor-section">
-            <h2>参数设置</h2>
+            <h2><i class="fas fa-sliders-h"></i>参数设置</h2>
             <div class="input-group">
-                <label>转动时间(秒):</label>
-                <input type="number" id="duration" value="20" min="1" max="60">
+                <div class="input-wrapper">
+                    <label><i class="fas fa-clock"></i>转动时间(秒):</label>
+                    <input type="number" id="duration" value="20" min="1" max="60">
+                </div>
             </div>
             <div class="input-group">
-                <label>速度(微秒/半步):</label>
-                <select id="speed">
-                    <option value="500">很快</option>
-                    <option value="1000" selected>正常</option>
-                    <option value="2000">较慢</option>
-                    <option value="5000">很慢</option>
-                </select>
+                <div class="input-wrapper">
+                    <label><i class="fas fa-tachometer-alt"></i>速度:</label>
+                    <select id="speed">
+                        <option value="500">⚡ 很快</option>
+                        <option value="1000" selected>🚀 正常</option>
+                        <option value="2000">🐌 较慢</option>
+                        <option value="5000">🐢 很慢</option>
+                    </select>
+                </div>
             </div>
             <div class="control-group">
-                <button onclick="setParameters()">应用设置</button>
+                <button class="settings-btn" onclick="setParameters()">
+                    <i class="fas fa-check"></i>应用设置
+                </button>
             </div>
         </div>
 
         <div class="motor-section">
-            <h2>系统管理</h2>
+            <h2><i class="fas fa-tools"></i>系统管理</h2>
             <div class="control-group">
-                <button onclick="rebootSystem()">重启系统</button>
-                <button onclick="showOTAInfo()">显示/隐藏 OTA 信息</button>
+                <button class="system-btn" onclick="rebootSystem()">
+                    <i class="fas fa-power-off"></i>重启系统
+                </button>
+                <button class="system-btn" onclick="showOTAInfo()">
+                    <i class="fas fa-upload"></i>OTA 更新信息
+                </button>
             </div>
-            <div id="otaInfo" style="display:none; margin-top:15px; padding:10px; background:rgba(0,0,0,0.3); border-radius:5px;">
-                <p><strong>OTA 无线更新说明</strong></p>
-                <p>1. 确保设备在线</p>
-                <p>2. 在 PlatformIO 中取消注释 OTA 配置</p>
-                <p>3. 运行 pio run -t upload</p>
-                <p>4. 主机名：<span id="hostname">camera-lens.local</span></p>
-                <p>5. 密码：admin123</p>
+            <div id="otaInfo" class="ota-info" style="display:none;">
+                <h3><i class="fas fa-cloud-upload-alt"></i>OTA 无线更新说明</h3>
+                <p>📋 1. 确保设备在线</p>
+                <p>💻 2. 在 PlatformIO 中取消注释 OTA 配置</p>
+                <p>🚀 3. 运行 pio run -t upload</p>
+                <p>🌐 4. 主机名：<strong id="hostname">camera-lens.local</strong></p>
+                <p>🔑 5. 密码：<strong>admin123</strong></p>
             </div>
         </div>
     </div>
@@ -126,29 +387,68 @@
             }
         }
 
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
         async function sendRequest(path) {
             try {
+                showLoading();
                 const url = buildUrl(path);
+                console.log('发送请求到:', url); // 调试日志
                 const response = await fetch(url);
                 const text = await response.text();
-                updateStatus('命令已发送: ' + url + ' - 响应: ' + text.substring(0, 50));
+                console.log('收到响应:', response.status, text); // 调试日志
+                updateStatus('✅ 命令成功: ' + url, 'success');
+                
+                // 添加成功音效提示
+                playSuccessSound();
+                
                 return text;
             } catch (error) {
-                updateStatus('错误: ' + error.message + ' URL: ' + buildUrl(path));
+                console.error('请求失败:', error); // 调试日志
+                updateStatus('❌ 错误: ' + error.message + ' URL: ' + buildUrl(path), 'error');
+                
+                // 添加错误音效提示
+                playErrorSound();
+            } finally {
+                hideLoading();
             }
         }
 
-        function updateStatus(message) {
+        function updateStatus(message, type = 'info') {
             const statusElement = document.getElementById('status');
+            const statusText = statusElement.querySelector('span');
             const now = new Date().toLocaleTimeString();
-            statusElement.textContent = `[${now}] ${message}`;
+            
+            statusText.textContent = `[${now}] ${message}`;
+            
+            // 根据消息类型更改样式
+            statusElement.className = 'status';
+            if (type === 'success') {
+                statusElement.style.borderLeftColor = '#4CAF50';
+                statusElement.querySelector('i').className = 'fas fa-check-circle';
+                statusElement.querySelector('i').style.color = '#4CAF50';
+            } else if (type === 'error') {
+                statusElement.style.borderLeftColor = '#f44336';
+                statusElement.querySelector('i').className = 'fas fa-exclamation-triangle';
+                statusElement.querySelector('i').style.color = '#f44336';
+            } else {
+                statusElement.style.borderLeftColor = '#2196F3';
+                statusElement.querySelector('i').className = 'fas fa-info-circle';
+                statusElement.querySelector('i').style.color = '#2196F3';
+            }
         }
 
         function saveApiBase() {
             const input = document.getElementById('apiBase');
             apiBase = input.value.trim();
             localStorage.setItem('apiBase', apiBase);
-            updateStatus('API地址已保存: ' + (apiBase || '默认(当前域名)'));
+            updateStatus('💾 API地址已保存: ' + (apiBase || '默认(当前域名)'), 'success');
             updateApiHint();
         }
 
@@ -156,7 +456,7 @@
             apiBase = '/motor';
             document.getElementById('apiBase').value = apiBase;
             localStorage.setItem('apiBase', apiBase);
-            updateStatus('已切换到生产环境地址: ' + apiBase);
+            updateStatus('🏭 已切换到生产环境地址: ' + apiBase, 'success');
             updateApiHint();
         }
 
@@ -164,55 +464,140 @@
             apiBase = 'http://camera-lens.local';
             document.getElementById('apiBase').value = apiBase;
             localStorage.setItem('apiBase', apiBase);
-            updateStatus('已切换到mDNS地址: ' + apiBase);
+            updateStatus('🔧 已切换到mDNS地址: ' + apiBase, 'success');
             updateApiHint();
         }
 
         function updateApiHint() {
             const hint = document.getElementById('apiHint');
             if (apiBase === '/motor') {
-                hint.textContent = '生产环境: 通过反向代理映射 /motor 到设备根目录';
+                hint.textContent = '🏭 生产环境: 通过反向代理映射 /motor 到设备根目录';
             } else if (apiBase.includes('camera-lens.local')) {
-                hint.textContent = '开发环境: 直接访问设备mDNS地址';
+                hint.textContent = '🔧 开发环境: 直接访问设备mDNS地址';
             } else if (apiBase.startsWith('http')) {
-                hint.textContent = '自定义: 直接访问指定IP或域名';
+                hint.textContent = '🌐 自定义: 直接访问指定IP或域名';
             } else {
-                hint.textContent = '默认: 使用当前页面的域名和端口';
+                hint.textContent = '📍 默认: 使用当前页面的域名和端口';
             }
         }
 
         function controlMotor(motorNum, direction) {
             const duration = document.getElementById('duration').value;
+            
+            // 添加按钮动效
+            const button = event.target.closest('button');
+            button.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                button.style.transform = '';
+            }, 150);
+            
             sendRequest(`/motor${motorNum}/${direction}?t=${duration}`);
         }
 
         function stopMotor(motorNum) {
+            const button = event.target.closest('button');
+            button.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                button.style.transform = '';
+            }, 150);
+            
             sendRequest(`/motor${motorNum}/stop`);
         }
 
         function controlBothMotors(dir1, dir2) {
             const duration = document.getElementById('duration').value;
+            
+            const button = event.target.closest('button');
+            button.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                button.style.transform = '';
+            }, 150);
+            
             sendRequest(`/both?d1=${dir1}&d2=${dir2}&t=${duration}`);
         }
 
         function stopAllMotors() {
+            const button = event.target.closest('button');
+            button.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                button.style.transform = '';
+            }, 150);
+            
             sendRequest('/stop/all');
         }
 
         function setParameters() {
             const speed = document.getElementById('speed').value;
+            
+            const button = event.target.closest('button');
+            button.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                button.style.transform = '';
+            }, 150);
+            
             sendRequest(`/set/speed/${speed}`);
         }
 
         function rebootSystem() {
-            if (confirm('确定要重启系统吗?')) {
+            if (confirm('🔄 确定要重启系统吗？\n\n系统将在3秒后重启，请稍后重新连接。')) {
+                updateStatus('🔄 系统重启中，请稍后...', 'info');
                 sendRequest('/reboot');
             }
         }
 
         function showOTAInfo() {
             const otaInfo = document.getElementById('otaInfo');
-            otaInfo.style.display = (otaInfo.style.display === 'none' || otaInfo.style.display === '') ? 'block' : 'none';
+            const isVisible = otaInfo.style.display !== 'none';
+            otaInfo.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                otaInfo.style.animation = 'fadeIn 0.3s ease';
+            }
+        }
+
+        // 音效函数（使用Web Audio API）
+        function playSuccessSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            } catch (e) {
+                // 忽略音频错误
+            }
+        }
+
+        function playErrorSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(200, audioContext.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (e) {
+                // 忽略音频错误
+            }
         }
 
         window.onload = function() {
@@ -223,20 +608,48 @@
                 document.getElementById('apiBase').value = apiBase;
             }
             updateApiHint();
-            updateStatus('网页控制界面已加载 - API地址: ' + (apiBase || '默认'));
+            updateStatus('🚀 网页控制界面已加载 - API地址: ' + (apiBase || '默认'), 'success');
+            
+            // 定期获取状态
             setInterval(getStatus, 5000);
+            
+            // 添加键盘快捷键
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey) {
+                    switch(e.key) {
+                        case '1': controlMotor(1, 'cw'); e.preventDefault(); break;
+                        case '2': controlMotor(1, 'ccw'); e.preventDefault(); break;
+                        case '3': controlMotor(2, 'cw'); e.preventDefault(); break;
+                        case '4': controlMotor(2, 'ccw'); e.preventDefault(); break;
+                        case 's': stopAllMotors(); e.preventDefault(); break;
+                    }
+                }
+            });
+            
+            // 显示快捷键提示
+            updateStatus('💡 快捷键: Ctrl+1/2(电机1) Ctrl+3/4(电机2) Ctrl+S(全停)', 'info');
         };
 
         async function getStatus() {
             try {
                 const response = await fetch(buildUrl('/status'));
                 const data = await response.json();
-                updateStatus(`电机状态: M1=${data.motor1 || '停止'} | M2=${data.motor2 || '停止'}`);
+                updateStatus(`⚙️ 电机状态: M1=${data.motor1 || '停止'} | M2=${data.motor2 || '停止'}`, 'info');
             } catch (error) { 
                 // 静默处理状态查询错误
                 console.log('状态查询失败:', error.message);
             }
         }
+
+        // 添加淡入动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>

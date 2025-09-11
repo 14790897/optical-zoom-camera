@@ -461,7 +461,7 @@ void setup() {
   initLittleFS();
   initWiFi();
   initMDNS();
-  initOTA();
+  // initOTA();
   initWebServer();
   
   Serial.println("==================================");
