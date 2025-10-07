@@ -38,12 +38,19 @@ volatile int current_step_delay = STEP_DELAY;
 
 // 日志辅助
 static inline const char* dirToStr(bool cw) { return cw ? "顺时针" : "逆时针"; }
+
+// 前置声明
+void updateMotorEnable();
+
 static void logMotorState() {
   unsigned long now = millis();
   unsigned long m1_left = (motor1_running && motor1_stop_time > now) ? (motor1_stop_time - now) / 1000UL : 0;
   unsigned long m2_left = (motor2_running && motor2_stop_time > now) ? (motor2_stop_time - now) / 1000UL : 0;
-  Serial.printf("[状态] delay=%dus | M1:%s%s 剩余%lus | M2:%s%s 剩余%lus\n",
+  bool enableActive = (motor1_running || motor2_running);
+  
+  Serial.printf("[状态] delay=%dus | EN=%s | M1:%s%s 剩余%lus | M2:%s%s 剩余%lus\n",
                 current_step_delay,
+                enableActive ? "启用" : "禁用",
                 motor1_running ? "运行" : "停止",
                 motor1_running ? (motor1_direction ? "(顺)" : "(逆)") : "",
                 m1_left,
@@ -85,12 +92,24 @@ void startMotor(int motorNum, bool clockwise, int duration_seconds) {
     motor1_running = true;
     motor1_direction = clockwise;
     motor1_stop_time = millis() + (duration_seconds * 1000);
-    digitalWrite(EN_PIN_1, LOW);
   } else if (motorNum == 2) {
     motor2_running = true;
     motor2_direction = clockwise;
     motor2_stop_time = millis() + (duration_seconds * 1000);
-    digitalWrite(EN_PIN_2, LOW);
+  }
+  // 更新使能状态
+  updateMotorEnable();
+}
+
+// 管理电机使能状态
+void updateMotorEnable() {
+  // 只有当至少一个电机运行时才启用驱动器
+  if (motor1_running || motor2_running) {
+    digitalWrite(EN_PIN_1, LOW);  // 启用电机1驱动
+    digitalWrite(EN_PIN_2, LOW);  // 启用电机2驱动
+  } else {
+    digitalWrite(EN_PIN_1, HIGH); // 禁用电机1驱动
+    digitalWrite(EN_PIN_2, HIGH); // 禁用电机2驱动
   }
 }
 
@@ -102,17 +121,21 @@ void stopMotor(int motorNum) {
   } else if (motorNum == 2) {
     motor2_running = false;
   }
+  // 更新使能状态
+  updateMotorEnable();
 }
 
 // 更新电机状态（在loop中调用）
 void updateMotors() {
   unsigned long currentTime = millis();
+  bool enableChanged = false;
   
   // 检查电机1
   if (motor1_running) {
     if (currentTime >= motor1_stop_time) {
       motor1_running = false;
       Serial.println("[电机1] 到时自动停止");
+      enableChanged = true;
     } else {
       stepMotor(1, 1, motor1_direction);
     }
@@ -123,9 +146,15 @@ void updateMotors() {
     if (currentTime >= motor2_stop_time) {
       motor2_running = false;
       Serial.println("[电机2] 到时自动停止");
+      enableChanged = true;
     } else {
       stepMotor(2, 1, motor2_direction);
     }
+  }
+  
+  // 如果有电机状态改变，更新使能状态
+  if (enableChanged) {
+    updateMotorEnable();
   }
 }
 
@@ -337,8 +366,9 @@ void initWebServer() {
   // 停止所有电机
   server.on("/stop/all", HTTP_GET, [](AsyncWebServerRequest *request){
     Serial.println("[HTTP] /stop/all");
-    stopMotor(1);
-    stopMotor(2);
+    motor1_running = false;
+    motor2_running = false;
+    updateMotorEnable(); // 禁用所有电机驱动器
     request->send(200, "text/plain", "所有电机已停止");
   });
   
@@ -445,9 +475,9 @@ void setup() {
   pinMode(EN_PIN_1, OUTPUT);
   pinMode(EN_PIN_2, OUTPUT);
 
-  // 使能步进电机驱动（低电平有效）
-  digitalWrite(EN_PIN_1, LOW);
-  digitalWrite(EN_PIN_2, LOW);
+  // 初始状态禁用步进电机驱动（高电平禁用）
+  digitalWrite(EN_PIN_1, HIGH);
+  digitalWrite(EN_PIN_2, HIGH);
 
   // 初始状态
   digitalWrite(DIR_PIN_1, LOW);
